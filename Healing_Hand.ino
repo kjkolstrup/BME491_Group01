@@ -41,10 +41,13 @@ JOYSTICK:
 #include "LCD_Driver.h"
 #include "GUI_Paint.h"
 
+#include <EEPROM.h>
+
 #define joystick_x A1
 #define joystick_y A0
 
 #define buttonA 2
+#define buttonB 3
 
 #define BLACK   0x0000
 #define BLUE    0x001F
@@ -150,13 +153,23 @@ void setup()
   gameSize = {0, 0, 320, 170};
   //newGame(&games[0], &state);
   Serial.begin(9600);
+
+  EEPROM.update(0,128);
+  EEPROM.update(1,128);
+  EEPROM.update(2,128);
+  EEPROM.update(3,128);
+  EEPROM.update(4,128);
+  EEPROM.update(5,128);
+  EEPROM.update(32,128);
+  EEPROM.update(33,128);
+  EEPROM.update(34,128);
 }
 //////////////////////////////////////////////////////////////
 // ARDUINO LOOP
 //////////////////////////////////////////////////////////////
 //variables used for reporting to user
 //these update when a new max value is reached while playing the game
-int userFlex1, userFlex2, userFlex3, userFlex4, userFlexAvg, userForceAvg, userLvl = 0;
+int userFlex1, userFlex2, userFlex3, userFlex4, userFlexAvg, userForceAvg, userLvl, userHiScore, userID = 0;
 //variables used for keeping track of things in code
 //these update every loop
 int flex1, flex2, flex3, flex4, flexAvg, force1, force2, force3, force4, force5, force6, forceAvg =0;
@@ -181,17 +194,31 @@ switch((int)HHState){
   case 0: {//startup
     drawBoxedString(10,10,"HealingHand",BLUE,WHITE);
     drawBoxedString(10,30,"press buttonA to start",BLUE,WHITE);
-    while (waitForButtonA()<0){}
+    //while (waitForButtonA()<0){}
     clearDialog();
     drawBoxedString(10,10,"Select User",BLUE,WHITE);
-    while (waitForButtonA()<0){}
+    displayUsers();
+    userID = -1;
+    while (userID == -1){
+      userID = getSelection();
+      
+    }
     clearDialog();
-    //load user data
-
-    drawBoxedString(90,10,"USER STATS",BLUE,WHITE);
-    drawBoxedString(10,35,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
-    char flexStr[20] = "avg:" ;
+//handle new user and load user data
+    if (userID == 0){
+      newUser();
+    } else {
+      loadUserData(userID);
+    }
     char buff[3];
+    char userStr[15] = "USER ";
+    strcat(userStr,itoa(userID,buff,10));
+    strcat(userStr," STATS");
+    drawBoxedString(90,10,userStr,BLUE,WHITE);
+
+    drawBoxedString(10,35,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
+//display gets messed up when all values are 3 digits
+    char flexStr[20] = "avg:" ;
     strcat(flexStr,itoa(userFlexAvg,buff,10));
     strcat(flexStr," |");
     strcat(flexStr,itoa(userFlex1,buff,10));
@@ -202,16 +229,20 @@ switch((int)HHState){
     strcat(flexStr,"|");
     strcat(flexStr,itoa(userFlex4,buff,10));
     drawBoxedString(10,60, flexStr,YELLOW,RED);
+
     char forceString[10] = "Force: ";
     strcat(forceString,itoa(userForceAvg,buff,10));
     strcat(forceString,"N");
     drawBoxedString(10,85,forceString,GREEN,MAGENTA);
-    char lvlString[10] = "Level: ";
-    strcat(lvlString,itoa(userLvl,buff,10)); 
+
+    char lvlString[15] = "Hi Score: ";
+    strcat(lvlString,itoa(userHiScore,buff,10)); 
     drawBoxedString(10,110,lvlString,BLUE,WHITE);
+
     char lvlString2[20] = "Cont. from level ";
     strcat(lvlString2,itoa(userLvl,buff,10));
     drawBoxedString(10,135,lvlString2,BLUE,WHITE);
+
     while (waitForButtonA()<0){}
     clearDialog();
     
@@ -260,10 +291,6 @@ switch((int)HHState){
     } else if ( state.remainingLives <= 0) {
       switchToReview();
       state.score = 0;
-      /*gameOverTouchToStart();
-      
-      level = 0;
-      newGame(game, &state);*/
     }
   }
   break;
@@ -272,6 +299,7 @@ switch((int)HHState){
     drawBoxedString(10,30,"Good Work!",BLUE,WHITE);
     drawBoxedString(10,50,"Push ButtonA for Stats",BLUE,WHITE);
     while (waitForButtonA()<0){}
+    clearDialog();
     drawBoxedString(90,10,"USER STATS",BLUE,WHITE);
     drawBoxedString(10,35,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
     char flexStr[20] = "avg:" ;
@@ -296,6 +324,8 @@ switch((int)HHState){
     char lvlString2[20] = "Retry from level ";
     strcat(lvlString2,itoa(userLvl,buff,10));
     drawBoxedString(10,135,lvlString2,BLUE,WHITE);
+    
+    //needs to be switched to a contineu playing or shut down option 
     while (waitForButtonA()<0){}
     clearDialog();
     switchToGame(0);
@@ -304,6 +334,68 @@ switch((int)HHState){
   break;
 }
   
+}
+
+void displayUsers(){
+  //display new user option
+  drawBoxedString(10,65,"New User", MAGENTA,WHITE);
+  int addr = 0;
+  int i =1;
+  while (EEPROM.read(addr) != 255){
+    //display the user as it exists
+    char userStr[10] = "USER ";
+    char buff[10];
+    strcat(userStr,itoa(i,buff,10));
+    drawBoxedString(170, addr+10,userStr ,MAGENTA,WHITE);
+    addr+=32;
+    i++;
+  }
+}
+
+void loadUserData(int UID){
+  int addr = (UID-1)*32;
+  userFlex1 = EEPROM.read(addr);
+  userFlex2 = EEPROM.read(addr+1);
+  userFlex3 = EEPROM.read(addr+2);
+  userFlex4 = EEPROM.read(addr+3);
+  userFlexAvg = EEPROM.read(addr+4);
+  userForceAvg = EEPROM.read(addr+5);
+  userLvl = EEPROM.read(addr+6);
+  userHiScore = EEPROM.read(addr+7);
+}
+
+void newUser(){
+  int UID = 0;
+  while (EEPROM.read(UID)!=255){
+    UID = UID+32;
+  }
+  UID = UID/32;
+  userID = UID+1;
+}
+
+void storeUserData(int UID){
+  int addr = (UID-1)*32;
+  EEPROM.update(addr,userFlex1);
+  EEPROM.update(addr+1,userFlex2);
+  EEPROM.update(addr+2,userFlex3);
+  EEPROM.update(addr+3,userFlex4);
+  EEPROM.update(addr+4,userFlexAvg);
+  EEPROM.update(addr+5,userForceAvg);
+  EEPROM.update(addr+6,userLvl);
+  EEPROM.update(addr+7,userHiScore);
+}
+
+int getSelection(){
+  if((digitalRead(buttonA) == HIGH) && (digitalRead(buttonB) == HIGH)){
+    return 0;
+  }
+  if ( digitalRead(buttonA) == HIGH){
+    return 1;
+  }
+  if (digitalRead(buttonB) == HIGH){
+    return 2;
+  }
+  return -1;
 }
 
 int waitForButtonA(){
@@ -320,16 +412,7 @@ void newGame(game_type* newGame, game_state_type * state) {
   clearDialog();
   updateLives(game->lives, state->remainingLives);
   updateScore(state->score);
-
   setupWall(game, state);
-
-  touchToStart();
-
-  clearDialog();
-  updateLives(game->lives, state->remainingLives);
-  updateScore(state->score);
-  setupWall(game, state);
-
 
 }
 
@@ -353,22 +436,15 @@ void setupState(game_type* game, game_state_type * state) {
 }
 
 void updateLives(int lives, int remainingLives) {
-
   for (int i = 0; i < lives; i++) {
     Paint_DrawCircle((1+i)*15,15,5,BLACK,5,1);
-    
   }
-
   for (int i = 0; i < remainingLives; i++) {
     Paint_DrawCircle((1+i)*15,15,5,YELLOW,5,1);
-    
   }
-
 }
 
-
 void setupWall(game_type * game, game_state_type * state) {
-
   int colors[] = {RED, RED, BLUE, BLUE,  YELLOW, YELLOW, GREEN, GREEN};
   state->walltop = game->top + 40;
   state->wallbottom = state->walltop + game->rows * state->brickheight;
@@ -381,7 +457,6 @@ void setupWall(game_type * game, game_state_type * state) {
     }
   }
 }
-
 
 void drawBrick(game_state_type * state, int xBrick, int yBrickRow, uint16_t backgroundColor) {
   int brickxStart = (state->brickwidth * xBrick) + game->brickGap;
@@ -431,19 +506,6 @@ void drawBall(int x, int y, int xold, int yold, int ballsize) {
   Paint_DrawRectangle(x, y, x + ballsize, y + ballsize, CYAN, 1, 1);
 
 }
-
-void touchToStart() {
-  drawBoxedString(0, 80, "   BREAKOUT", YELLOW, BLACK);
-  drawBoxedString(0, 100, "    push up TO START", RED, BLACK);
-  while (waitForTouch() < 0) {}
-}
-
-void gameOverTouchToStart() {
-  drawBoxedString(0, 80, "  GAME OVER", YELLOW, BLACK);
-  drawBoxedString(0, 100, "  push up TO START", RED, BLACK);
-  while (waitForTouch() < 0) {}
-}
-
 
 void updateScore (int score) {
   char buffer[5];
@@ -550,15 +612,11 @@ void initLCD() {
   Paint_SetRotate(ROTATE_270);
   Paint_NewImage(170, 320, 270, BLACK);
   Paint_Clear(BLACK);
-  
-  
- 
 }
 
 
 void drawBoxedString(const uint16_t x, const uint16_t y, const char* string, const uint16_t foreColor, const uint16_t backgroundColor) {
   Paint_DrawString_EN(x,y, string, &Font20,foreColor, backgroundColor);
-  
 }
 
 void clearDialog() {
@@ -566,7 +624,6 @@ void clearDialog() {
   Paint_SetRotate(ROTATE_270);
   Paint_NewImage(170, 320, 270, BLACK);
   Paint_Clear(BLACK);
-
 }
 
 int readUiSelection(game_type * game, game_state_type * state, const int16_t lastSelected ) {
@@ -585,14 +642,29 @@ int readUiSelection(game_type * game, game_state_type * state, const int16_t las
 
 }
 
+//SENSOR FUNCTIONS
+int readFlexSensor(int pin1, int pin2){
+  int readA = analogRead(pin1);
+  int readB = analogRead(pin2);
+  int reading = readB - readA;
+  return reading;
+}
 
-int waitForTouch() {
-  int joyx = analogRead(joystick_x);
-  int joyy = analogRead(joystick_y);
+int flex2Deg(int reading){
+  //does some math to make 0-1023 analog reading degrees
   
-if (joyy <250){
-  return 1;
+  
+  return 0;
 }
-return -1;
 
+int readAdaForce(int pin){
+  int reading = analogRead(pin);
+  return reading;
 }
+
+int readSingleTact(){
+//should be as simple as copy/paste
+
+  return reading;
+}
+
