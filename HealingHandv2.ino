@@ -957,9 +957,8 @@ int readFlexSensor(int pin1, int pin2){
 
 int flex2Deg(int reading){
   //does some math to make 0-1023 analog reading degrees
-  
-  
-  return 0;
+  int deg = (-0.0013 (reading * reading)) + (1.0877*reading) - 59.9341;
+  return deg;
 }
 
 int readAdaForce(int pin){
