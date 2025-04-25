@@ -8,7 +8,7 @@
   - Grip strength and finger bend angle tracking
 
   Hardware:
-  - Arduino UNO
+  - Arduino Mega2560
   - AZ-Delivery 2.4 TFT LCD Display
   - Flex sensors for finger position
   - Force sensors for grip strength measurement
@@ -893,8 +893,28 @@ int flex2Deg(int reading) {
 }
 
 int readAdaForce(int pin) {
-  int reading = analogRead(pin);
-  return reading;
+  int fsrVolt = analogRead(pin);
+  return fsrVolt;
+  int fsrForce = 0;
+
+    int fsrResistance = 5000 - fsrVolt;     // fsrVoltage is in millivolts so 5V = 5000mV
+    fsrResistance *= 10000;                // 10K resistor
+    fsrResistance /= fsrVolt;
+    Serial.print("FSR resistance in ohms = ");
+    Serial.println(fsrResistance);
+ 
+    int fsrConductance = 1000000;       // we measure in micromhos so 
+    fsrConductance /= fsrResistance;
+    if (fsrConductance <= 1000) {
+      fsrForce = fsrConductance / 80;
+      Serial.print("Force in Newtons: ");
+      Serial.println(fsrForce);      
+    } else {
+      fsrForce = fsrConductance - 1000;
+      fsrForce /= 30;
+      Serial.print("Force in Newtons: ");
+      Serial.println(fsrForce);            
+    }
 }
 
 int readSingleTact(const byte sensorAddress) {
