@@ -1,6 +1,25 @@
 /*
   HealingHand Device - Arduino Rehabilitation System
 
+  */
+/*PIN OUT FOR LCD AND JOYSTICK
+LCD:
+  BL 9
+  RST 8
+  DC 7
+  CS 10
+  CLK 13 
+  DIN 11
+  GND GND
+  VCC 5V
+
+JOYSTICK:
+  GND GND
+  +5V 3.3V
+  VRX A0
+  VRY A1
+*/
+
   Features:
   - Breakout game for motor training
   - Finger mobility rehabilitation mode
