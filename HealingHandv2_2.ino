@@ -1,15 +1,23 @@
 /*
   HealingHand Device - Arduino Rehabilitation System
 
-  */
+for final version:
+
+check all DELETE, REPLACE, UPDATE comments
+reorganize into multiple files?
+rehab mode is broken
+*/
+
+
+
 /*PIN OUT FOR LCD AND JOYSTICK
 LCD:
   BL 9
   RST 8
   DC 7
   CS 10
-  CLK 13 
-  DIN 11
+  CLK 13 52
+  DIN 11 51
   GND GND
   VCC 5V
 
@@ -19,7 +27,7 @@ JOYSTICK:
   VRX A0
   VRY A1
 */
-
+/*
   Features:
   - Breakout game for motor training
   - Finger mobility rehabilitation mode
@@ -63,6 +71,8 @@ const byte SENSOR2_ADDRESS = 0x08;
 int16_t baseline1 = 0; // Store baseline value for taring sensors
 int16_t baseline2 = 0; 
 
+
+//DELETE
 //artifact of previous control regimen
 #define joystick_x A1
 #define joystick_y A0
@@ -168,27 +178,31 @@ int userFlex1, userFlex2, userFlex3, userFlex4, userFlexAvg, userForceAvg, userL
 //variables used for keeping track of things in code
 //these update every loop
 int flex1, flex2, flex3, flex4, flexAvg, force1, force2, force3, force4, force5, force6, forceAvg = 0;
-//state variable for keeping track of device function
+//state variables for keeping track of device function
 int rehabExercise = 0;  // Current exercise in rehab mode
 unsigned long exerciseStartTime = 0;  // Time when current exercise started
 int exerciseComplete = 0;  // Flag to track if current exercise is complete
 int totalExercises = 4;  // Total number of exercises in the sequence
 int successCount = 0;  // Counter for successful exercises
 
-int selection = -1;
-int HHState = 0;
+int selection = -1; //controller for game interface
+int HHState = 0; //overall device state-tracker
 
-// Function prototypes - all functions must be declared before use
+// Function prototypes
+
+//Singletact force sensor functions
 void scanI2C();
 void calibratePressureSensors();
 void readAndDisplayPressureData();
 void calibrateSingleSensor(byte sensorAddress, int sensorNumber);
 short readDataFromSensor(byte address);
 
+//LCD functions
 void initLCD();
 void clearDialog();
 void drawBoxedString(const uint16_t x, const uint16_t y, const char* string, const uint16_t foreColor, const uint16_t backgroundColor);
 
+//Game functions
 void newGame(game_type* newGame, game_state_type* state);
 void setupStateSizes(game_type* game, game_state_type* state);
 void setupState(game_type* game, game_state_type* state);
@@ -210,22 +224,25 @@ void unsetBrick(int wall[], uint8_t x, uint8_t y);
 boolean isBrickIn(int wall[], uint8_t x, uint8_t y);
 int readGameControls(game_type* game, game_state_type* state, const int16_t lastSelected);
 
+//Menu/control functions
 void displayUsers();
 int getSelection();
-int waitForButtonA();
+int waitForThumbPress();
 void newUser();
 void loadUserData(int UID);
 void storeUserData(int UID);
 void switchToGame(int level);
-void switchToReview();
+void switchToMenu();
+void shutDown(int UID);
 
+//sensor interface functions
 void updateSensorValues();
 int readFlexSensor(int pin1, int pin2);
 int flex2Deg(int reading);
 int readAdaForce(int pin);
 int readSingleTact(const byte sensorAddress);
 
-// Rehab mode function prototypes
+// Rehab mode functions
 void drawRehabExercise(const char* instructionText, const char* holdText, int fingerNum);
 void drawFingerDiagram(int fingerNum);
 void displayCurrentValues();
@@ -239,7 +256,7 @@ void switchToRehabMode();
 void setup() {
   initLCD();
   gameSize = {0, 0, 320, 170};
-
+//DELETE
   EEPROM.update(0,128);
   EEPROM.update(1,128);
   EEPROM.update(32,128);
@@ -252,6 +269,7 @@ void setup() {
   //from singletact file
   Wire.begin();
   TWBR=12;
+  //REPLACE
   Serial.begin(57600);  // start serial for output
   Serial.flush();
   
@@ -261,7 +279,7 @@ void setup() {
   
   // Run I2C scanner to check for connected devices
   scanI2C();
-  
+  //REPLACE
   Serial.println("SingleTact multiple sensor value in N and lbs.");
   Serial.println("----------------------------------------");
   
@@ -269,9 +287,34 @@ void setup() {
   delay(2000);
   
   // Perform initial taring of all pressure sensors
+
+  //REPLACE
   Serial.println("Performing initial calibration, make sure no pressure is applied to sensors...");
   calibratePressureSensors();
   Serial.println("Calibration complete!");
+
+  //Display start up screen
+  //UPDATE
+  drawBoxedString(10,10,"HealingHand",BLUE,WHITE);
+  drawBoxedString(10,30,"press thumb to start",BLUE,WHITE);
+  while (waitForThumbPress()<0){}
+  clearDialog();
+
+  drawBoxedString(10,10,"Select User",BLUE,WHITE);
+  displayUsers();
+  //get user selection
+  userID = -1;
+  while (userID == -1){
+    userID = getSelection();
+  }
+  clearDialog();
+  
+    //handle new user and load user data
+  if (userID == 0){
+    newUser();
+  } else {
+    loadUserData(userID);
+  }
 }
 
 //////////////////////////////////////////////////////////////
@@ -281,25 +324,7 @@ void loop() {
   updateSensorValues();
   
   switch((int)HHState) {
-    case 0: {//startup
-      drawBoxedString(10,170,"HealingHand",BLUE,WHITE);
-      drawBoxedString(10,30,"press thumb to start",BLUE,WHITE);
-      while (waitForButtonA()<0){}
-      clearDialog();
-      drawBoxedString(10,10,"Select User",BLUE,WHITE);
-      displayUsers();
-      userID = -1;
-      while (userID == -1){
-        userID = getSelection();
-      }
-      clearDialog();
-      
-      //handle new user and load user data
-      if (userID == 0){
-        newUser();
-      } else {
-        loadUserData(userID);
-      }
+    case 0: {//main menu
       
       // Display main menu with options
       clearDialog();
@@ -307,25 +332,21 @@ void loop() {
       drawBoxedString(10,40,"1: View Stats",YELLOW,BLACK);
       drawBoxedString(10,70,"2: Play Breakout",YELLOW,BLACK);
       drawBoxedString(10,100,"3: Mobility Rehab",YELLOW,BLACK);
-      drawBoxedString(10,160,"Use fingers 1-3 to select",GREEN,BLACK);
+      drawBoxedString(10,130,"4: Shut Down",YELLOW,BLACK);
+      drawBoxedString(10,150,"1-4: Bend fingers 1-4",GREEN,BLACK);
       
       // Wait for menu selection
       int menuChoice = -1;
-      while (menuChoice == -1) {
+      while (menuChoice <= 0) {
         // Check finger flexion for menu choice
-        if (flex1 < 500) {
-          menuChoice = 1; // View stats
-        } else if (flex2 < 500) {
-          menuChoice = 2; // Play Breakout
-        } else if (flex3 < 500) {
-          menuChoice = 3; // Mobility Rehab
-        }
+        menuChoice = getSelection();
+        Serial.println(menuChoice);
         delay(100);
       }
       
       // Process menu choice
       switch (menuChoice) {
-        case 1: // View Stats
+        case 1: {// View Stats
           clearDialog();
           char buff[3];
           char userStr[15] = "USER ";
@@ -333,7 +354,7 @@ void loop() {
           strcat(userStr," STATS");
           drawBoxedString(90,10,userStr,BLUE,WHITE);
   
-          drawBoxedString(10,35,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
+          drawBoxedString(10,32,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
           char flexStr[20] = "avg:" ;
           strcat(flexStr,itoa(userFlexAvg,buff,10));
           strcat(flexStr," |");
@@ -344,45 +365,52 @@ void loop() {
           strcat(flexStr,itoa(userFlex3,buff,10));
           strcat(flexStr,"|");
           strcat(flexStr,itoa(userFlex4,buff,10));
-          drawBoxedString(10,60, flexStr,YELLOW,RED);
+          drawBoxedString(10,54, flexStr,YELLOW,RED);
   
           char forceString[10] = "Force: ";
           strcat(forceString,itoa(userForceAvg,buff,10));
           strcat(forceString,"N");
-          drawBoxedString(10,85,forceString,GREEN,MAGENTA);
+          drawBoxedString(10,76,forceString,GREEN,MAGENTA);
   
-          char lvlString[15] = "Hi Score: ";
+          char lvlString[15] = "High Score: ";
           strcat(lvlString,itoa(userHiScore,buff,10)); 
-          drawBoxedString(10,110,lvlString,BLUE,WHITE);
+          drawBoxedString(10,98,lvlString,BLUE,WHITE);
   
-          char lvlString2[20] = "Cont. from level ";
+          char lvlString2[20] = "Current Level: ";
           strcat(lvlString2,itoa(userLvl,buff,10));
-          drawBoxedString(10,135,lvlString2,BLUE,WHITE);
+          drawBoxedString(10,120,lvlString2,BLUE,WHITE);
   
-          drawBoxedString(10,160,"Press thumb to continue",GREEN,BLACK);
-          while (waitForButtonA()<0){}
+          drawBoxedString(10,142,"Continue: Press thumb",GREEN,BLACK);
+          while (waitForThumbPress()<0){}
           clearDialog();
+        }
           break;
           
-        case 2: // Play Breakout
-          switchToGame(0);
-          break;
+        case 2:{ // Play Breakout
+          switchToGame(userLvl);
+          Serial.println(HHState);    
+      }
+      break;
           
-        case 3: // Mobility Rehab
+        case 3: { // Mobility Rehab
           switchToRehabMode();
+        }
+          break;
+        case 4: {// Shut Down
+          shutDown(userID);
+        }
           break;
       }
       break;
     }
     
-    case 1: {
+    case 1: { //play game
+      //read sensor values for proper game function
       selection = readGameControls(game, &state, selection);
-
+    
       drawPlayer(game, &state);
       // store old position to remove old pixels
       state.playerxold = state.playerx;
-
-      // calculate new ball position x1 = x0 + vx * dt
 
       // check max speed
       if (abs( state.vely) > ((1 << game->exponent) - 1)) {
@@ -407,8 +435,8 @@ void loop() {
       state.ballyold = state.bally;
 
       // increment velocity
-      state.velx = (45 + (state.score >> 3 )) * ( (state.velx > 0) - (state.velx < 0));
-      state.vely = (45 + (state.score >> 3 )) * ( (state.vely > 0) - (state.vely < 0));
+      state.velx = (40 + (state.score >> 3 )) * ( (state.velx > 0) - (state.velx < 0));
+      state.vely = (40 + (state.score >> 3 )) * ( (state.vely > 0) - (state.vely < 0));
 
       // if no bricks go to next level
       if (noBricks(game, &state) && level < GAMES_NUMBER) {
@@ -421,51 +449,17 @@ void loop() {
         if (level > userLvl){
           userLvl = level;
         }
-        switchToReview();
         state.score = 0;
+        drawBoxedString(10,80,"GAME OVER",YELLOW,BLACK);
+        drawBoxedString(10,110,"Press Thumb to return to Main Menu",YELLOW,BLACK);
+        while (waitForThumbPress()<0){}
+        switchToMenu();
       }
       break;
     }
-    
-    case 2: {
-      drawBoxedString(170,10,"HealingHand",BLUE,WHITE);
-      drawBoxedString(10,30,"Good Work!",BLUE,WHITE);
-      drawBoxedString(10,50,"Push ButtonA for Stats",BLUE,WHITE);
-      while (waitForButtonA()<0){}
-      clearDialog();
-      drawBoxedString(90,10,"USER STATS",BLUE,WHITE);
-      drawBoxedString(10,35,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
-      char flexStr[20] = "avg:" ;
-      char buff[3];
-      strcat(flexStr,itoa(userFlexAvg,buff,10));
-      strcat(flexStr," |");
-      strcat(flexStr,itoa(userFlex1,buff,10));
-      strcat(flexStr,"|");
-      strcat(flexStr,itoa(userFlex2,buff,10));
-      strcat(flexStr,"|");
-      strcat(flexStr,itoa(userFlex3,buff,10));
-      strcat(flexStr,"|");
-      strcat(flexStr,itoa(userFlex4,buff,10));
-      drawBoxedString(10,60, flexStr,YELLOW,RED);
-      char forceString[10] = "Force: ";
-      strcat(forceString,itoa(userForceAvg,buff,10));
-      strcat(forceString,"N");
-      drawBoxedString(10,85,forceString,GREEN,MAGENTA);
-      char lvlString[10] = "Level: ";
-      strcat(lvlString,itoa(userLvl,buff,10)); 
-      drawBoxedString(10,110,lvlString,BLUE,WHITE);
-      char lvlString2[20] = "Retry from level ";
-      strcat(lvlString2,itoa(userLvl,buff,10));
-      drawBoxedString(10,135,lvlString2,BLUE,WHITE);
-      
-      //needs to be switched to a continue playing or shut down option 
-      while (waitForButtonA()<0){}
-      clearDialog();
-      switchToGame(0);
-      break;
-    }
-    
-    case 3: {
+
+    case 2: { //rehab mode
+    //UPDATE
       // Initialize the mode if we just entered it
       if (rehabExercise == 0) {
         clearDialog();
@@ -475,9 +469,7 @@ void loop() {
         drawBoxedString(10, 90, "Press thumb sensor to start", YELLOW, BLACK);
         
         // Wait for user to start
-        while (readAdaForce(FORCE1) < 500) {
-          delay(50);
-        }
+        while (waitForThumbPress() < 0) {}
         delay(500); // Debounce
         
         // Start first exercise
@@ -596,15 +588,6 @@ void loop() {
             finishRehabMode();
           }
           break;
-      }
-      
-      // Display current flex and force values for debugging/feedback
-      displayCurrentValues();
-      
-      // Check if user wants to exit rehabilitation mode
-      if (digitalRead(buttonB) == LOW) {
-        HHState = 0; // Return to main menu
-        rehabExercise = 0;
       }
       break;
     }
@@ -848,15 +831,25 @@ void switchToGame(int level) {
   newGame(&games[level], &state);
 }
 
-void switchToReview() {
-  HHState = 2;
+void switchToMenu() {
+  HHState = 0;
   clearDialog();
 }
 
 void switchToRehabMode() {
-  HHState = 3;
+  HHState = 2;
   rehabExercise = 0;
   clearDialog();
+}
+
+void shutDown(int UID){
+  clearDialog();
+  drawBoxedString(10,10,"Storing data, please wait",BLUE,WHITE);
+  storeUserData(UID);
+  delay(100);
+  clearDialog();
+  drawBoxedString(10,10,"Data stored!",BLUE,WHITE);
+  drawBoxedString(10,40,"Power off device now",BLUE,WHITE);
 }
 
 // LCD handling functions
@@ -894,9 +887,30 @@ void updateSensorValues() {
   force2 = readAdaForce(FORCE2);
   force3 = readAdaForce(FORCE3);
   force4 = readAdaForce(FORCE4);
+
   force5 = readSingleTact(SENSOR1_ADDRESS);
   force6 = readSingleTact(SENSOR2_ADDRESS);
   forceAvg = 0; //not sure how to calc yet
+
+  if (flex2deg(flex1) > userFlex1){
+    userFlex1 = flex1;
+  }
+  if (flex2deg(flex2) > userFlex2){
+    userFlex2 = flex2;
+  }
+  if (flex2deg(flex3) > userFlex3){
+    userFlex3 = flex3;
+  }
+  if (flex2deg(flex4) > userFlex4){
+    userFlex4 = flex4;
+  }
+  if (flex2deg(flexAvg) > userFlexAvg){
+    userFlexAvg = flexAvg;
+  }
+  if (forceAvg > userForceAvg){
+    userForceAvg = forceAvg;
+  }
+  
 }
 
 int readFlexSensor(int pin1, int pin2) {
@@ -907,33 +921,30 @@ int readFlexSensor(int pin1, int pin2) {
 }
 
 int flex2Deg(int reading) {
-  //does some math to make 0-1023 analog reading degrees
-  return 0;
+  //calibrated using tracker/matlab method
+  int deg = (-0.0013 * reading * reading) + (1.0877*reading) - 59.9341
+  return deg;
 }
 
 int readAdaForce(int pin) {
   int fsrVolt = analogRead(pin);
-  return fsrVolt;
+  
   int fsrForce = 0;
 
     int fsrResistance = 5000 - fsrVolt;     // fsrVoltage is in millivolts so 5V = 5000mV
     fsrResistance *= 10000;                // 10K resistor
     fsrResistance /= fsrVolt;
-    Serial.print("FSR resistance in ohms = ");
-    Serial.println(fsrResistance);
  
     int fsrConductance = 1000000;       // we measure in micromhos so 
     fsrConductance /= fsrResistance;
     if (fsrConductance <= 1000) {
       fsrForce = fsrConductance / 80;
-      Serial.print("Force in Newtons: ");
-      Serial.println(fsrForce);      
     } else {
       fsrForce = fsrConductance - 1000;
-      fsrForce /= 30;
-      Serial.print("Force in Newtons: ");
-      Serial.println(fsrForce);            
+      fsrForce /= 30;           
     }
+//UPDATE (other things depend on the FSR reading, split into ada2newton function)
+    return fsrVolt;
 }
 
 int readSingleTact(const byte sensorAddress) {
@@ -955,7 +966,7 @@ int readSingleTact(const byte sensorAddress) {
 // User interface functions
 void displayUsers() {
   //display new user option
-  drawBoxedString(10, 65, "New User", MAGENTA, WHITE);
+  drawBoxedString(10, 45, "New User (0)", MAGENTA, WHITE);
   int addr = 0;
   int i = 1;
   while (EEPROM.read(addr) != 255) {
@@ -963,12 +974,14 @@ void displayUsers() {
     char userStr[10] = "USER ";
     char buff[10];
     strcat(userStr, itoa(i, buff, 10));
-    drawBoxedString(170, addr+10, userStr, MAGENTA, WHITE);
+    drawBoxedString(200, addr+10, userStr, MAGENTA, WHITE);
     addr += 32;
     i++;
   }
+  drawBoxedString(10,130,"0 - Press thumb",GREEN,BLACK);
+  drawBoxedString(10,150,"1-4: Bend fingers 1-4",GREEN,BLACK);
 }
-
+//UPDATE
 int getSelection() {
   if (readAdaForce(FORCE1) > 500) {
     return 0;
@@ -988,7 +1001,7 @@ int getSelection() {
   return -1;
 }
 
-int waitForButtonA() {
+int waitForThumbPress() {
   if (readAdaForce(FORCE1) > 500) {
     return 1;
   }
@@ -1223,6 +1236,7 @@ boolean isBrickIn(int wall[], uint8_t x, uint8_t y) {
 
 int readGameControls(game_type* game, game_state_type* state, const int16_t lastSelected) {
   //move left when index finger is flexed, right when middle finger is flexed
+  //UPDATE
   if (flex1 < 500) {
     state->playerx = state->playerxold + 2;
   } else if (flex2 < 500) {
@@ -1322,5 +1336,5 @@ void finishRehabMode() {
   
   // Reset and return to main menu
   rehabExercise = 0;
-  HHState = 0;
+  switchToMenu();
 }
