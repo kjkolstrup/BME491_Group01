@@ -5,7 +5,11 @@ for final version:
 
 check all DELETE, REPLACE, UPDATE comments
 reorganize into multiple files?
-rehab mode is broken
+instructions for game controls
+powerups for game
+more rehab exercises
+wait after shut down
+
 */
 
 
@@ -96,6 +100,7 @@ int16_t baseline2 = 0;
 
 #define SCORE_SIZE 30
 #define REHAB_TIMEOUT 10000  // Timeout for each exercise in milliseconds
+//UPDATE
 #define COMPLETE_THRESHOLD 800  // Threshold to consider exercise complete
 char scoreFormat[] = "%04d";
 
@@ -245,6 +250,7 @@ int readSingleTact(const byte sensorAddress);
 // Rehab mode functions
 void drawRehabExercise(const char* instructionText, const char* holdText, int fingerNum);
 void drawFingerDiagram(int fingerNum);
+//DELETE
 void displayCurrentValues();
 void displayRehabProgress(int completed, int total);
 void finishRehabMode();
@@ -258,13 +264,13 @@ void setup() {
   gameSize = {0, 0, 320, 170};
 //DELETE
   EEPROM.update(0,128);
-  EEPROM.update(1,128);
+  EEPROM.update(6,0);
   EEPROM.update(32,128);
-  EEPROM.update(33,128);
+  EEPROM.update(38,0);
   EEPROM.update(64,128);
-  EEPROM.update(65,128);
+  EEPROM.update(70,0);
   EEPROM.update(96,128);
-  EEPROM.update(97,128);
+  EEPROM.update(102,0);
 
   //from singletact file
   Wire.begin();
@@ -340,7 +346,6 @@ void loop() {
       while (menuChoice <= 0) {
         // Check finger flexion for menu choice
         menuChoice = getSelection();
-        Serial.println(menuChoice);
         delay(100);
       }
       
@@ -464,9 +469,9 @@ void loop() {
       if (rehabExercise == 0) {
         clearDialog();
         drawBoxedString(10, 10, "Mobility Rehabilitation", BLUE, WHITE);
-        drawBoxedString(10, 40, "Follow the prompts to", GREEN, BLACK);
-        drawBoxedString(10, 60, "perform finger exercises", GREEN, BLACK);
-        drawBoxedString(10, 90, "Press thumb sensor to start", YELLOW, BLACK);
+        drawBoxedString(10, 45, "Follow the prompts to", GREEN, BLACK);
+        drawBoxedString(10, 70, "perform finger exercises", GREEN, BLACK);
+        drawBoxedString(10, 105, "Press thumb sensor to start", YELLOW, BLACK);
         
         // Wait for user to start
         while (waitForThumbPress() < 0) {}
@@ -485,9 +490,10 @@ void loop() {
       
       // Display progress bar
       displayRehabProgress(successCount, totalExercises);
-      
+      Serial.println("Progress displayed");
       // Check if we need to timeout and move to next exercise
-      if ((millis() - exerciseStartTime > REHAB_TIMEOUT) && !exerciseComplete) {
+      /*if ((millis() - exerciseStartTime > REHAB_TIMEOUT) && !exerciseComplete) {
+        Serial.println("Timeout reached, moving on");
         // Move to next exercise if timeout
         rehabExercise++;
         exerciseStartTime = millis();
@@ -495,16 +501,18 @@ void loop() {
         
         if (rehabExercise > totalExercises) {
           // End of all exercises
+          Serial.println("all exercises finished");
           finishRehabMode();
           break;
         }
         
         clearDialog();
-      }
+      }*/
       
       // Handle different exercises
       switch (rehabExercise) {
         case 1:
+        Serial.println("Rehab exercise 1");
           // Index finger to thumb
           drawRehabExercise("Touch INDEX finger to thumb", 
                           "Hold for 2 seconds",
@@ -512,13 +520,15 @@ void loop() {
           
           // Check if exercise is completed (using sensor data)
           if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex1 < 400 && !exerciseComplete) {
+            Serial.println("Exercise 1 completed");
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
-            drawBoxedString(10, 120, "Great job!", GREEN, BLACK);
+            drawBoxedString(10, 110, "Great job!", GREEN, BLACK);
             delay(2000);
             
             // Move to next exercise
+            Serial.println("moving to next exercise");
             rehabExercise++;
             exerciseStartTime = millis();
             exerciseComplete = 0;
@@ -537,7 +547,7 @@ void loop() {
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
-            drawBoxedString(10, 120, "Excellent work!", GREEN, BLACK);
+            drawBoxedString(10, 110, "Excellent work!", GREEN, BLACK);
             delay(2000);
             
             // Move to next exercise
@@ -559,7 +569,7 @@ void loop() {
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
-            drawBoxedString(10, 120, "Well done!", GREEN, BLACK);
+            drawBoxedString(10, 110, "Well done!", GREEN, BLACK);
             delay(2000);
             
             // Move to next exercise
@@ -581,7 +591,7 @@ void loop() {
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
-            drawBoxedString(10, 120, "Perfect!", GREEN, BLACK);
+            drawBoxedString(10, 110, "Perfect!", GREEN, BLACK);
             delay(2000);
             
             // All exercises complete
@@ -858,15 +868,15 @@ void initLCD() {
   LCD_Init();
 
   LCD_SetBacklight(100);
-  Paint_SetRotate(ROTATE_270);
-  Paint_NewImage(170, 320, 270, BLACK);
+  Paint_SetRotate(ROTATE_90);
+  Paint_NewImage(170, 320, 90, BLACK);
   Paint_Clear(BLACK);
 }
 
 void clearDialog() {
   LCD_SetBacklight(100);
-  Paint_SetRotate(ROTATE_270);
-  Paint_NewImage(170, 320, 270, BLACK);
+  Paint_SetRotate(ROTATE_90);
+  Paint_NewImage(170, 320, 90, BLACK);
   Paint_Clear(BLACK);
 }
 
@@ -892,20 +902,20 @@ void updateSensorValues() {
   force6 = readSingleTact(SENSOR2_ADDRESS);
   forceAvg = 0; //not sure how to calc yet
 
-  if (flex2deg(flex1) > userFlex1){
-    userFlex1 = flex1;
+  if (flex2Deg(flex1) > userFlex1){
+    userFlex1 = flex2Deg(flex1);
   }
-  if (flex2deg(flex2) > userFlex2){
-    userFlex2 = flex2;
+  if (flex2Deg(flex2) > userFlex2){
+    userFlex2 = flex2Deg(flex2);
   }
-  if (flex2deg(flex3) > userFlex3){
-    userFlex3 = flex3;
+  if (flex2Deg(flex3) > userFlex3){
+    userFlex3 = flex2Deg(flex3);
   }
-  if (flex2deg(flex4) > userFlex4){
-    userFlex4 = flex4;
+  if (flex2Deg(flex4) > userFlex4){
+    userFlex4 = flex2Deg(flex4);
   }
-  if (flex2deg(flexAvg) > userFlexAvg){
-    userFlexAvg = flexAvg;
+  if (flex2Deg(flexAvg) > userFlexAvg){
+    userFlexAvg = flex2Deg(flexAvg);
   }
   if (forceAvg > userForceAvg){
     userForceAvg = forceAvg;
@@ -922,29 +932,30 @@ int readFlexSensor(int pin1, int pin2) {
 
 int flex2Deg(int reading) {
   //calibrated using tracker/matlab method
-  int deg = (-0.0013 * reading * reading) + (1.0877*reading) - 59.9341
+  int deg = (-0.0013 * reading * reading) + (1.0877*reading) - 59.9341;
   return deg;
 }
 
 int readAdaForce(int pin) {
   int fsrVolt = analogRead(pin);
-  
-  int fsrForce = 0;
+  return fsrVolt;
+}
 
-    int fsrResistance = 5000 - fsrVolt;     // fsrVoltage is in millivolts so 5V = 5000mV
-    fsrResistance *= 10000;                // 10K resistor
-    fsrResistance /= fsrVolt;
+int force2N(int reading){
+  int fsrForce = 0;
+  int fsrResistance = 5000 - reading;     // fsrVoltage is in millivolts so 5V = 5000mV
+  fsrResistance *= 10000;                // 10K resistor
+  fsrResistance /= reading;
  
-    int fsrConductance = 1000000;       // we measure in micromhos so 
-    fsrConductance /= fsrResistance;
-    if (fsrConductance <= 1000) {
-      fsrForce = fsrConductance / 80;
-    } else {
-      fsrForce = fsrConductance - 1000;
-      fsrForce /= 30;           
-    }
-//UPDATE (other things depend on the FSR reading, split into ada2newton function)
-    return fsrVolt;
+  int fsrConductance = 1000000;       // we measure in micromhos so 
+  fsrConductance /= fsrResistance;
+  if (fsrConductance <= 1000) {
+    fsrForce = fsrConductance / 80;
+  } else {
+    fsrForce = fsrConductance - 1000;
+    fsrForce /= 30;           
+  }
+  return fsrForce;
 }
 
 int readSingleTact(const byte sensorAddress) {
@@ -1251,14 +1262,7 @@ int readGameControls(game_type* game, game_state_type* state, const int16_t last
 void drawRehabExercise(const char* instructionText, const char* holdText, int fingerNum) {
   drawBoxedString(10, 10, "Finger Mobility Exercise", BLUE, WHITE);
   drawBoxedString(10, 40, instructionText, YELLOW, BLACK);
-  drawBoxedString(10, 60, holdText, YELLOW, BLACK);
-  
-  // Calculate time remaining
-  int timeLeft = (REHAB_TIMEOUT - (millis() - exerciseStartTime)) / 1000;
-  char timeBuffer[20];
-  sprintf(timeBuffer, "Time left: %d sec", timeLeft);
-  drawBoxedString(10, 90, timeBuffer, WHITE, BLACK);
-  
+  drawBoxedString(10, 70, holdText, YELLOW, BLACK);  
   // Draw finger diagram
   drawFingerDiagram(fingerNum);
 }
@@ -1282,7 +1286,7 @@ void drawFingerDiagram(int fingerNum) {
     Paint_DrawLine(x, 90, 230, 100, RED, 3, 1);
   }
 }
-
+//DELETE
 void displayCurrentValues() {
   char buffer[30];
   
@@ -1297,15 +1301,15 @@ void displayRehabProgress(int completed, int total) {
   // Draw progress text
   char progressText[20];
   sprintf(progressText, "Progress: %d/%d", completed, total);
-  drawBoxedString(170, 10, progressText, GREEN, BLACK);
+  drawBoxedString(10, 125, progressText, GREEN, BLACK);
   
   // Draw progress bar
   int barWidth = 100;
   int progress = (barWidth * completed) / total;
   
-  Paint_DrawRectangle(170, 30, 170 + barWidth, 40, WHITE, 1, 0);
+  Paint_DrawRectangle(10, 150, 10 + barWidth, 160, WHITE, 1, 0);
   if (progress > 0) {
-    Paint_DrawRectangle(170, 30, 170 + progress, 40, GREEN, 1, 1);
+    Paint_DrawRectangle(10, 150, 10 + progress, 160, GREEN, 1, 1);
   }
 }
 
