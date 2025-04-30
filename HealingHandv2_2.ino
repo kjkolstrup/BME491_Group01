@@ -5,10 +5,8 @@ for final version:
 
 check all DELETE, REPLACE, UPDATE comments
 reorganize into multiple files?
-instructions for game controls
-powerups for game
-more rehab exercises
-wait after shut down
+more rehab exercises?
+
 
 */
 
@@ -173,6 +171,11 @@ typedef struct game_state_type {
   int wallbottom ;
   int brickheight;
   int brickwidth;
+  int powerUpFlag;
+  int powerUpType;
+  int playerSpeed;
+  int powerUpCounter;
+
 } game_state_type;
 
 game_state_type state;
@@ -185,7 +188,7 @@ int userFlex1, userFlex2, userFlex3, userFlex4, userFlexAvg, userForceAvg, userL
 int flex1, flex2, flex3, flex4, flexAvg, force1, force2, force3, force4, force5, force6, forceAvg = 0;
 //state variables for keeping track of device function
 int rehabExercise = 0;  // Current exercise in rehab mode
-unsigned long exerciseStartTime = 0;  // Time when current exercise started
+int exerciseTracker = 0;  // variable to track the number of times an exercise has been attempted
 int exerciseComplete = 0;  // Flag to track if current exercise is complete
 int totalExercises = 4;  // Total number of exercises in the sequence
 int successCount = 0;  // Counter for successful exercises
@@ -208,6 +211,7 @@ void clearDialog();
 void drawBoxedString(const uint16_t x, const uint16_t y, const char* string, const uint16_t foreColor, const uint16_t backgroundColor);
 
 //Game functions
+void displayControlScreen();
 void newGame(game_type* newGame, game_state_type* state);
 void setupStateSizes(game_type* game, game_state_type* state);
 void setupState(game_type* game, game_state_type* state);
@@ -228,6 +232,7 @@ void setBrick(int wall[], uint8_t x, uint8_t y);
 void unsetBrick(int wall[], uint8_t x, uint8_t y);
 boolean isBrickIn(int wall[], uint8_t x, uint8_t y);
 int readGameControls(game_type* game, game_state_type* state, const int16_t lastSelected);
+void displayPowerUp(int type);
 
 //Menu/control functions
 void displayUsers();
@@ -250,8 +255,6 @@ int readSingleTact(const byte sensorAddress);
 // Rehab mode functions
 void drawRehabExercise(const char* instructionText, const char* holdText, int fingerNum);
 void drawFingerDiagram(int fingerNum);
-//DELETE
-void displayCurrentValues();
 void displayRehabProgress(int completed, int total);
 void finishRehabMode();
 void switchToRehabMode();
@@ -271,6 +274,7 @@ void setup() {
   EEPROM.update(70,0);
   EEPROM.update(96,128);
   EEPROM.update(102,0);
+  EEPROM.update(128,255);
 
   //from singletact file
   Wire.begin();
@@ -300,13 +304,15 @@ void setup() {
   Serial.println("Calibration complete!");
 
   //Display start up screen
-  //UPDATE
-  drawBoxedString(10,10,"HealingHand",BLUE,WHITE);
-  drawBoxedString(10,30,"press thumb to start",BLUE,WHITE);
+
+  drawBoxedString(80,10,"HealingHand",LIGHTBLUE,WHITE);
+  drawBoxedString(10,35,"Developed by BME Group01: AG, DH, GI, KK, EN",BLUE,WHITE);
+  drawBoxedString(10,110,"UNR CoE Capstone 2025",DARKBLUE,WHITE);
+  drawBoxedString(10,150,"Press thumb to start",GREEN,BLACK);
   while (waitForThumbPress()<0){}
   clearDialog();
 
-  drawBoxedString(10,10,"Select User",BLUE,WHITE);
+  drawBoxedString(10,10,"Select User",LIGHTBLUE,WHITE);
   displayUsers();
   //get user selection
   userID = -1;
@@ -334,12 +340,12 @@ void loop() {
       
       // Display main menu with options
       clearDialog();
-      drawBoxedString(10,10,"MAIN MENU",BLUE,WHITE);
-      drawBoxedString(10,40,"1: View Stats",YELLOW,BLACK);
-      drawBoxedString(10,70,"2: Play Breakout",YELLOW,BLACK);
-      drawBoxedString(10,100,"3: Mobility Rehab",YELLOW,BLACK);
-      drawBoxedString(10,130,"4: Shut Down",YELLOW,BLACK);
-      drawBoxedString(10,150,"1-4: Bend fingers 1-4",GREEN,BLACK);
+      drawBoxedString(10,10,"MAIN MENU",LIGHTBLUE,WHITE);
+      drawBoxedString(10,35,"1: View Stats",YELLOW,BLACK);
+      drawBoxedString(10,60,"2: Play BLOCK BREAKOUT",YELLOW,BLACK);
+      drawBoxedString(10,85,"3: Mobility Rehab",YELLOW,BLACK);
+      drawBoxedString(10,110,"4: Shut Down",YELLOW,BLACK);
+      drawBoxedString(10,135,"1-4: Bend fingers 1-4",GREEN,BLACK);
       
       // Wait for menu selection
       int menuChoice = -1;
@@ -357,7 +363,7 @@ void loop() {
           char userStr[15] = "USER ";
           strcat(userStr,itoa(userID,buff,10));
           strcat(userStr," STATS");
-          drawBoxedString(90,10,userStr,BLUE,WHITE);
+          drawBoxedString(90,10,userStr,LIGHTBLUE,WHITE);
   
           drawBoxedString(10,32,"Flex(deg)|1 |2 |3 |4  ",YELLOW, RED);
           char flexStr[20] = "avg:" ;
@@ -375,7 +381,7 @@ void loop() {
           char forceString[10] = "Force: ";
           strcat(forceString,itoa(userForceAvg,buff,10));
           strcat(forceString,"N");
-          drawBoxedString(10,76,forceString,GREEN,MAGENTA);
+          drawBoxedString(10,76,forceString,MAGENTA,BLACK);
   
           char lvlString[15] = "High Score: ";
           strcat(lvlString,itoa(userHiScore,buff,10)); 
@@ -385,7 +391,7 @@ void loop() {
           strcat(lvlString2,itoa(userLvl,buff,10));
           drawBoxedString(10,120,lvlString2,BLUE,WHITE);
   
-          drawBoxedString(10,142,"Continue: Press thumb",GREEN,BLACK);
+          drawBoxedString(10,142,"Press thumb to continue",GREEN,BLACK);
           while (waitForThumbPress()<0){}
           clearDialog();
         }
@@ -456,7 +462,7 @@ void loop() {
         }
         state.score = 0;
         drawBoxedString(10,80,"GAME OVER",YELLOW,BLACK);
-        drawBoxedString(10,110,"Press Thumb to return to Main Menu",YELLOW,BLACK);
+        drawBoxedString(10,110,"Press thumb to return to Main Menu",YELLOW,BLACK);
         while (waitForThumbPress()<0){}
         switchToMenu();
       }
@@ -464,14 +470,13 @@ void loop() {
     }
 
     case 2: { //rehab mode
-    //UPDATE
       // Initialize the mode if we just entered it
       if (rehabExercise == 0) {
         clearDialog();
-        drawBoxedString(10, 10, "Mobility Rehabilitation", BLUE, WHITE);
-        drawBoxedString(10, 45, "Follow the prompts to", GREEN, BLACK);
-        drawBoxedString(10, 70, "perform finger exercises", GREEN, BLACK);
-        drawBoxedString(10, 105, "Press thumb sensor to start", YELLOW, BLACK);
+        drawBoxedString(10, 10, "Mobility Rehabilitation", LIGHTBLUE, WHITE);
+        drawBoxedString(10, 45, "Follow the prompts to", YELLOW, BLACK);
+        drawBoxedString(10, 70, "perform finger exercises", YELLOW, BLACK);
+        drawBoxedString(10, 105, "Press thumb sensor to start", GREEN, BLACK);
         
         // Wait for user to start
         while (waitForThumbPress() < 0) {}
@@ -479,7 +484,7 @@ void loop() {
         
         // Start first exercise
         rehabExercise = 1;
-        exerciseStartTime = millis();
+        exerciseTracker = 0;
         exerciseComplete = 0;
         successCount = 0;
         clearDialog();
@@ -490,36 +495,33 @@ void loop() {
       
       // Display progress bar
       displayRehabProgress(successCount, totalExercises);
-      Serial.println("Progress displayed");
       // Check if we need to timeout and move to next exercise
-      /*if ((millis() - exerciseStartTime > REHAB_TIMEOUT) && !exerciseComplete) {
+      if ((exerciseTracker > 7) && !exerciseComplete) {
         Serial.println("Timeout reached, moving on");
         // Move to next exercise if timeout
         rehabExercise++;
-        exerciseStartTime = millis();
+        exerciseTracker =0;
         exerciseComplete = 0;
         
         if (rehabExercise > totalExercises) {
           // End of all exercises
           Serial.println("all exercises finished");
           finishRehabMode();
-          break;
+          //break;
         }
-        
         clearDialog();
-      }*/
-      
+      }
+      exerciseTracker += 1;
+
       // Handle different exercises
       switch (rehabExercise) {
         case 1:
-        Serial.println("Rehab exercise 1");
           // Index finger to thumb
           drawRehabExercise("Touch INDEX finger to thumb", 
                           "Hold for 2 seconds",
                           1);
-          
           // Check if exercise is completed (using sensor data)
-          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex1 < 400 && !exerciseComplete) {
+          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex1 < 400 && !exerciseComplete && exerciseTracker > 3) {
             Serial.println("Exercise 1 completed");
             // Exercise completed
             exerciseComplete = 1;
@@ -530,7 +532,7 @@ void loop() {
             // Move to next exercise
             Serial.println("moving to next exercise");
             rehabExercise++;
-            exerciseStartTime = millis();
+            exerciseTracker =0;
             exerciseComplete = 0;
             clearDialog();
           }
@@ -538,12 +540,12 @@ void loop() {
           
         case 2:
           // Middle finger to thumb
-          drawRehabExercise("Touch MIDDLE finger to thumb", 
+          drawRehabExercise("Touch MIDDLE finger tothumb", 
                           "Hold for 2 seconds",
                           2);
           
           // Check if exercise is completed (using sensor data)
-          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex2 < 400 && !exerciseComplete) {
+          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex2 < 400 && !exerciseComplete && exerciseTracker > 3) {
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
@@ -552,7 +554,7 @@ void loop() {
             
             // Move to next exercise
             rehabExercise++;
-            exerciseStartTime = millis();
+            exerciseTracker =0;
             exerciseComplete = 0;
             clearDialog();
           }
@@ -560,12 +562,12 @@ void loop() {
           
         case 3:
           // Ring finger to thumb
-          drawRehabExercise("Touch RING finger to thumb", 
+          drawRehabExercise("Touch RING finger to  thumb", 
                           "Hold for 2 seconds",
                           3);
           
           // Check if exercise is completed (using sensor data)
-          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex3 < 400 && !exerciseComplete) {
+          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex3 < 400 && !exerciseComplete && exerciseTracker > 3) {
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
@@ -574,7 +576,7 @@ void loop() {
             
             // Move to next exercise
             rehabExercise++;
-            exerciseStartTime = millis();
+            exerciseTracker =0;
             exerciseComplete = 0;
             clearDialog();
           }
@@ -587,7 +589,7 @@ void loop() {
                           4);
           
           // Check if exercise is completed (using sensor data)
-          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex4 < 400 && !exerciseComplete) {
+          if (readAdaForce(FORCE1) > COMPLETE_THRESHOLD && flex4 < 400 && !exerciseComplete && exerciseTracker > 3) {
             // Exercise completed
             exerciseComplete = 1;
             successCount++;
@@ -838,6 +840,7 @@ short readDataFromSensor(byte address) {
 // Mode switching functions
 void switchToGame(int level) {
   HHState = 1;
+  displayControlScreen();
   newGame(&games[level], &state);
 }
 
@@ -860,6 +863,7 @@ void shutDown(int UID){
   clearDialog();
   drawBoxedString(10,10,"Data stored!",BLUE,WHITE);
   drawBoxedString(10,40,"Power off device now",BLUE,WHITE);
+  delay(10000);
 }
 
 // LCD handling functions
@@ -977,15 +981,16 @@ int readSingleTact(const byte sensorAddress) {
 // User interface functions
 void displayUsers() {
   //display new user option
-  drawBoxedString(10, 45, "New User (0)", MAGENTA, WHITE);
+  drawBoxedString(10, 45, "New User (0)", YELLOW, BLACK);
   int addr = 0;
   int i = 1;
+  //check if user data is stored
   while (EEPROM.read(addr) != 255) {
     //display the user as it exists
     char userStr[10] = "USER ";
     char buff[10];
     strcat(userStr, itoa(i, buff, 10));
-    drawBoxedString(200, addr+10, userStr, MAGENTA, WHITE);
+    drawBoxedString(200, addr+10, userStr, YELLOW, BLACK);
     addr += 32;
     i++;
   }
@@ -1053,6 +1058,17 @@ void storeUserData(int UID) {
 }
 
 // Game functions
+void displayControlScreen(){
+  clearDialog();
+  drawBoxedString(10, 10, "BLOCK BREAKOUT", LIGHTBLUE, WHITE);
+  drawBoxedString(10, 35, "Move the paddle by ", GREEN, BLACK);
+  drawBoxedString(10, 55, "bending your fingers", GREEN, BLACK);
+  drawBoxedString(10, 80, "Break blocks to lvl up", YELLOW, BLACK);
+  drawBoxedString(10,105, "Activate powerups by  pressing thumb", MAGENTA,BLACK);
+  drawBoxedString(10, 150, "Press thumb to cont.",BLUE,WHITE);
+  while (waitForThumbPress() < 0){};
+}
+
 void newGame(game_type* newGame, game_state_type* state) {
   game = newGame;
   setupState(game, state);
@@ -1080,6 +1096,9 @@ void setupState(game_type* game, game_state_type* state) {
   state->ballyold = state->bottom << game->exponent;
   state->velx = game->initVelx;
   state->vely = game->initVely;
+
+  state->playerSpeed = 1;
+  state->powerUpCounter = 0;
 }
 
 void updateLives(int lives, int remainingLives) {
@@ -1134,10 +1153,10 @@ void drawPlayer(game_type* game, game_state_type* state) {
   if (state->playerx != state->playerxold) {
     // remove old pixels
     if (state->playerx > state->playerxold) {
-      Paint_DrawRectangle(state->playerxold, state->bottom, state->playerxold + 2, (state->bottom + 1), BLACK, 1, 0);
+      Paint_DrawRectangle(state->playerxold, state->bottom, state->playerxold + state->playerSpeed, (state->bottom + 1), BLACK, 1, 0);
     }
     else {
-      Paint_DrawRectangle(state->playerxold + game->playerwidth - 2, state->bottom, state->playerxold + game->playerwidth + 5, (state->bottom + 1), BLACK, 1, 0);
+      Paint_DrawRectangle(state->playerxold + game->playerwidth - state->playerSpeed, state->bottom, state->playerxold + game->playerwidth + 5, (state->bottom + 1), BLACK, 1, 0);
     }
   }
 }
@@ -1192,6 +1211,17 @@ void hitBrick(game_state_type* state, int xBrick, int yBrickRow) {
   drawBrick(state, xBrick, yBrickRow, backgroundColor);
   unsetBrick(state->wallState, xBrick, yBrickRow);
   updateScore(state->score);
+  //check if player should receive powerup !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if(!state->powerUpFlag && state->score > 0){
+    state->powerUpCounter += 1;
+    if (state->powerUpCounter > 4){
+      state->powerUpFlag = 1;
+      state->powerUpCounter = 0;
+          //------------------      (max - min + 1) + min 
+      state->powerUpType = rand() % (2 - 0 + 1) + 0;
+      displayPowerUp(state->powerUpType); //powerup indicator at top of screen display type as well :)))))))
+    }
+  }
 }
 
 void checkBorderCollision(game_type* game, game_state_type* state, uint16_t x, uint16_t y) {
@@ -1249,20 +1279,70 @@ int readGameControls(game_type* game, game_state_type* state, const int16_t last
   //move left when index finger is flexed, right when middle finger is flexed
   //UPDATE
   if (flex1 < 500) {
-    state->playerx = state->playerxold + 2;
+    state->playerx = state->playerxold + state->playerSpeed;
   } else if (flex2 < 500) {
-    state->playerx = state->playerxold - 2;
+    state->playerx = state->playerxold - state->playerSpeed;
   } 
   if (state->playerx >= 320 - game->playerwidth) state->playerx = 320 - game->playerwidth;
   if (state->playerx < 0) state->playerx = 0;
+  if(state->powerUpFlag && readAdaForce(FORCE1)>500 ){
+    //powerup types: increase score (0), gain a life (1), increase paddle speed (2)
+    switch(state->powerUpType){
+      case 0: {
+        //increase score
+        state->score += (userLvl +1) * 5;
+        updateScore(state->score);
+      }
+      break;
+      case 1: {
+        //gain a life
+        state->remainingLives+=1;
+        game->lives += 1;
+        updateLives(game->lives,state->remainingLives);
+      }
+      break;
+      case 2: {
+        //increase paddle speed
+        state->playerSpeed += 1;
+      }
+      break;
+    }
+    state->powerUpFlag =0;
+    Paint_DrawRectangle(155,5,165,15,BLACK,1,1);
+  }
   return 1;
+}
+
+void displayPowerUp(int type){
+  drawBoxedString(10,150,"You got a power-up!",YELLOW,BLACK);
+  switch (type){
+    case 0:{
+      //powerup icon
+      Paint_DrawRectangle(155,5,165,15,MAGENTA,1,1);
+      drawBoxedString(10,150,"Score Increase!      ",MAGENTA,BLACK);
+    }
+    break;
+    case 1:{
+      //powerup icon
+      Paint_DrawRectangle(155,5,165,15,CYAN,1,1);
+      drawBoxedString(10,150,"Extra Life!          ",CYAN,BLACK);
+    }
+    break;
+    case 2: {
+      //powerup icon
+      Paint_DrawRectangle(155,5,165,15,GREEN,1,1);
+      drawBoxedString(10,150,"Paddle Speed Up!     ",GREEN,BLACK);
+    }
+  }
+  delay(1000);
+  drawBoxedString(10,150,"                      ",BLACK,BLACK);
 }
 
 // Rehabilitation mode functions
 void drawRehabExercise(const char* instructionText, const char* holdText, int fingerNum) {
-  drawBoxedString(10, 10, "Finger Mobility Exercise", BLUE, WHITE);
-  drawBoxedString(10, 40, instructionText, YELLOW, BLACK);
-  drawBoxedString(10, 70, holdText, YELLOW, BLACK);  
+  drawBoxedString(10, 10, "Finger Mobility", BLUE, WHITE);
+  drawBoxedString(10, 35, instructionText, YELLOW, BLACK);
+  drawBoxedString(10, 125, holdText, YELLOW, BLACK);  
   // Draw finger diagram
   drawFingerDiagram(fingerNum);
 }
@@ -1286,48 +1366,38 @@ void drawFingerDiagram(int fingerNum) {
     Paint_DrawLine(x, 90, 230, 100, RED, 3, 1);
   }
 }
-//DELETE
-void displayCurrentValues() {
-  char buffer[30];
-  
-  sprintf(buffer, "F1:%d F2:%d F3:%d F4:%d", flex1, flex2, flex3, flex4);
-  drawBoxedString(10, 140, buffer, CYAN, BLACK);
-  
-  sprintf(buffer, "Force: %d", readAdaForce(FORCE1));
-  drawBoxedString(10, 160, buffer, CYAN, BLACK);
-}
 
 void displayRehabProgress(int completed, int total) {
   // Draw progress text
   char progressText[20];
   sprintf(progressText, "Progress: %d/%d", completed, total);
-  drawBoxedString(10, 125, progressText, GREEN, BLACK);
+  drawBoxedString(10, 80, progressText, GREEN, BLACK);
   
   // Draw progress bar
   int barWidth = 100;
   int progress = (barWidth * completed) / total;
   
-  Paint_DrawRectangle(10, 150, 10 + barWidth, 160, WHITE, 1, 0);
+  Paint_DrawRectangle(10, 105, 10 + barWidth, 120, WHITE, 1, 0);
   if (progress > 0) {
-    Paint_DrawRectangle(10, 150, 10 + progress, 160, GREEN, 1, 1);
+    Paint_DrawRectangle(10, 105, 10 + progress, 120, GREEN, 1, 1);
   }
 }
 
 void finishRehabMode() {
   clearDialog();
-  drawBoxedString(10, 40, "Rehabilitation Complete!", BLUE, WHITE);
+  drawBoxedString(10, 20, "Rehabilitation Done!", BLUE, WHITE);
   
   char resultText[30];
-  sprintf(resultText, "Exercises completed: %d/%d", successCount, totalExercises);
-  drawBoxedString(10, 70, resultText, GREEN, BLACK);
+  sprintf(resultText, "Exercises completed:  %d/%d", successCount, totalExercises);
+  drawBoxedString(10, 45, resultText, GREEN, BLACK);
   
   // Display message based on performance
   if (successCount == totalExercises) {
-    drawBoxedString(10, 100, "Perfect score! Great job!", YELLOW, BLACK);
+    drawBoxedString(10, 85, "Perfect score! Great job!", YELLOW, BLACK);
   } else if (successCount >= totalExercises/2) {
-    drawBoxedString(10, 100, "Good work! Keep practicing!", YELLOW, BLACK);
+    drawBoxedString(10, 85, "Good work! Keep practicing!", YELLOW, BLACK);
   } else {
-    drawBoxedString(10, 100, "Keep trying! You'll improve!", YELLOW, BLACK);
+    drawBoxedString(10, 85, "Keep trying! You'll improve!", YELLOW, BLACK);
   }
   
   drawBoxedString(10, 130, "Press thumb to continue", GREEN, BLACK);
