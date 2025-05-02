@@ -62,7 +62,7 @@ float AdafruitFSR::toNewtons(int reading) {
   // Convert raw FSR reading to Newtons
   // This is an approximate conversion based on the FSR characteristics
   float fsrForce = 0;
-  
+  reading = 1023 - reading;
   // Calculate FSR resistance
   int fsrResistance = 5000 - reading;     // fsrVoltage is in millivolts so 5V = 5000mV
   fsrResistance *= 10000;                 // 10K resistor
