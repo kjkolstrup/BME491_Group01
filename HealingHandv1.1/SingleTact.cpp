@@ -76,7 +76,7 @@ void SingleTact::scanI2C() {
   }
   
   if (!sensor2Found) {
-    Serial.println("WARNING: Sensor 2 (0x08) not found on I2C bus!"); // CAN DELETE FOR DEBUGGING/TROUBLESHOOT 
+    Serial.println("WARNING: Sensor 2 (0x0C) not found on I2C bus!"); // CAN DELETE FOR DEBUGGING/TROUBLESHOOT 
   }
   
   Serial.println("----------------------------------------");
