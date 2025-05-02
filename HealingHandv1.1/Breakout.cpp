@@ -13,22 +13,22 @@ void Breakout::setupGameLevels() {
   // Define all game levels
   // Parameters: ballsize, playerwidth, playerheight, exponent, top, rows, columns, brickGap, lives, wall[8], initVelx, initVely
   
-  games[0] = { 5, 40, 8, 6, 0, 8, 8, 3, 3, {0x18, 0x66, 0xFF, 0xDB, 0xFF, 0x7E, 0x24, 0x3C}, 100, -100 };
-  games[1] = { 10, 50, 8, 6, 40, 8, 8, 3, 3, {0xFF, 0x99, 0xFF, 0xE7, 0xBD, 0xDB, 0xE7, 0xFF}, 28, -28 };
-  games[2] = { 10, 50, 8, 6, 40, 8, 8, 3, 3, {0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55}, 28, -28 };
-  games[3] = { 8, 50, 8, 6, 40, 8, 8, 3, 3, {0xFF, 0xC3, 0xC3, 0xC3, 0xC3, 0xC3, 0xC3, 0xFF}, 34, -34 };
-  games[4] = { 10, 40, 8, 6, 40, 8, 8, 3, 3, {0xFF, 0xAA, 0xAA, 0xFF, 0xFF, 0xAA, 0xAA, 0xFF}, 28, -28 };
-  games[5] = { 10, 40, 8, 6, 40, 8, 8, 3, 3, {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, 28, -28 };
-  games[6] = { 12, 64, 8, 6, 60, 4, 2, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 20, -20 };
-  games[7] = { 12, 60, 8, 6, 60, 5, 3, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 22, -22 };
-  games[8] = { 10, 56, 8, 6, 30, 6, 4, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 24, -24 };
-  games[9] = { 10, 52, 8, 6, 30, 7, 5, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 26, -26 };
-  games[10] = { 8, 48, 8, 6, 30, 8, 6, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 28, -28 };
-  games[11] = { 8, 44, 8, 6, 30, 8, 7, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 30, -30 };
-  games[12] = { 8, 40, 8, 6, 30, 8, 8, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 32, -32 };
-  games[13] = { 8, 36, 8, 6, 40, 8, 8, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 34, -34 };
-  games[14] = { 8, 36, 8, 6, 40, 8, 8, 3, 3, {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, 34, -34 };
-  games[15] = { 8, 36, 8, 6, 40, 8, 8, 3, 3, {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, 34, -34 };
+  games[0] = { 5, 40, 2, 6, 0, 8, 8, 3, 3, {0x18, 0x66, 0xFF, 0xDB, 0xFF, 0x7E, 0x24, 0x3C}, 100, -100 };
+  games[1] = { 10, 50, 2, 6, 40, 8, 8, 3, 3, {0xFF, 0x99, 0xFF, 0xE7, 0xBD, 0xDB, 0xE7, 0xFF}, 28, -28 };
+  games[2] = { 10, 50, 2, 6, 40, 8, 8, 3, 3, {0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55}, 28, -28 };
+  games[3] = { 8, 50, 2, 6, 40, 8, 8, 3, 3, {0xFF, 0xC3, 0xC3, 0xC3, 0xC3, 0xC3, 0xC3, 0xFF}, 34, -34 };
+  games[4] = { 10, 40, 2, 6, 40, 8, 8, 3, 3, {0xFF, 0xAA, 0xAA, 0xFF, 0xFF, 0xAA, 0xAA, 0xFF}, 28, -28 };
+  games[5] = { 10, 40, 2, 6, 40, 8, 8, 3, 3, {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, 28, -28 };
+  games[6] = { 12, 64, 2, 6, 60, 4, 2, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 20, -20 };
+  games[7] = { 12, 60, 2, 6, 60, 5, 3, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 22, -22 };
+  games[8] = { 10, 56, 2, 6, 30, 6, 4, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 24, -24 };
+  games[9] = { 10, 52, 2, 6, 30, 7, 5, 3, 4, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 26, -26 };
+  games[10] = { 8, 48, 2, 6, 30, 8, 6, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 28, -28 };
+  games[11] = { 8, 44, 2, 6, 30, 8, 7, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 30, -30 };
+  games[12] = { 8, 40, 2, 6, 30, 8, 8, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 32, -32 };
+  games[13] = { 8, 36, 2, 6, 40, 8, 8, 3, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 34, -34 };
+  games[14] = { 8, 36, 2, 6, 40, 8, 8, 3, 3, {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, 34, -34 };
+  games[15] = { 8, 36, 2, 6, 40, 8, 8, 3, 3, {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, 34, -34 };
 }
 
 void Breakout::displayControlScreen() {
@@ -37,7 +37,7 @@ void Breakout::displayControlScreen() {
   drawBoxedString(10, 35, "Move the paddle by ", GREEN, BLACK);
   drawBoxedString(10, 55, "bending your fingers", GREEN, BLACK);
   drawBoxedString(10, 80, "Break blocks to lvl up", YELLOW, BLACK);
-  drawBoxedString(10, 105, "Activate powerups by pressing thumb", MAGENTA, BLACK);
+  drawBoxedString(10, 105, "Activate powerups by  pressing thumb", MAGENTA, BLACK);
   drawBoxedString(10, 150, "Press thumb to cont.", BLUE, WHITE);
   // The main code will handle waiting for the thumb press was having issue in the cpp 
 }
@@ -133,10 +133,10 @@ void Breakout::setupWall() {
 }
 
 void Breakout::update(int flex1, int flex2) {
-  // Move player based on flex sensors
-  if (flex1 < 500) {
+  // Move player based on flex sensors UPDATE
+  if (flex2 > 215) {
     state.playerx = state.playerxold + state.playerSpeed;
-  } else if (flex2 < 500) {
+  } else if (flex1 > 200) {
     state.playerx = state.playerxold - state.playerSpeed;
   }
   
@@ -179,8 +179,8 @@ void Breakout::update(int flex1, int flex2) {
   state.ballyold = state.bally;
   
   // Increment velocity (game gets faster as score increases)
-  state.velx = (40 + (state.score >> 3)) * ((state.velx > 0) - (state.velx < 0));
-  state.vely = (40 + (state.score >> 3)) * ((state.vely > 0) - (state.vely < 0));
+  state.velx = (50 + (state.score >> 3)) * ((state.velx > 0) - (state.velx < 0));
+  state.vely = (50 + (state.score >> 3)) * ((state.vely > 0) - (state.vely < 0));
 }
 
 void Breakout::checkAndActivatePowerUp(bool thumbPressed) {
