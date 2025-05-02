@@ -30,7 +30,7 @@ void FlexSensor::begin() {
 int FlexSensor::readSensor(int pinA, int pinB) {
   int readA = analogRead(pinA);
   int readB = analogRead(pinB);
-  int reading = readB - readA;
+  int reading = readB - readA + 90;
   return reading;
 }
 
