@@ -106,5 +106,5 @@ bool AdafruitFSR::isThumbPressed(int threshold) {
   getThumb();
   
   // Return true if force is above threshold
-  return (thumbForce > threshold);
+  return (thumbForce < threshold);
 }
