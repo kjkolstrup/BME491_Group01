@@ -1,41 +1,17 @@
 /*
   HealingHand Device - Arduino Rehabilitation System
-
-for final version:
-check all DELETE, REPLACE, UPDATE comments
-reorganize into multiple files?
-instructions for game controls
-powerups for game
-more rehab exercises
-wait after shut down
-*/
-/*PIN OUT FOR LCD AND JOYSTICK
-LCD:
-  BL 9
-  RST 8
-  DC 7
-  CS 10
-  CLK 13 52
-  DIN 11 51
-  GND GND
-  VCC 5V
-
-JOYSTICK:
-  GND GND
-  +5V 3.3V
-  VRX A0
-  VRY A1
+  Developed by Anjalee Gitthens, Godwin Igbekoyi, Dillon Hughes, Kemma Kolstrup, and Erica Nichols
 */
 /*
   Features:
-  - Breakout game for motor training
+  - BLOCK BREAKOUT game for motor training
   - Finger mobility rehabilitation mode
   - User profile management
   - Grip strength and finger bend angle tracking
 
   Hardware:
   - Arduino Mega2560
-  - AZ-Delivery 2.4 TFT LCD Display
+  - WaveShare 1.9in LED screen
   - Flex sensors for finger position
   - Force sensors for grip strength measurement
 */
@@ -90,11 +66,11 @@ int selection = -1;     // Controller for game interface
 int userID = 0;         // Current user ID
 
 // User statistics variables
-int userFlex1, userFlex2, userFlex3, userFlex4, userFlexAvg;
+int userFlex1, userFlex2, userFlex3, userFlex4, userFlexAvg = 0;
 int userForceAvg, userLvl, userHiScore = 0;
 
 // Current sensor reading variables
-int flex1, flex2, flex3, flex4, flexAvg;
+int flex1, flex2, flex3, flex4, flexAvg = 0;
 int force1, force2, force3, force4, force5, force6, forceAvg = 0;
 
 // Function prototypes
@@ -133,17 +109,6 @@ void setup() {
   singleTact.begin();
   flexSensor.begin();
   fsrSensor.begin();
-  
-  // Clear EEPROM for testing - can be removed in production
-  EEPROM.update(0, 128);
-  EEPROM.update(6, 0);
-  EEPROM.update(32, 128);
-  EEPROM.update(38, 0);
-  EEPROM.update(64, 128);
-  EEPROM.update(70, 0);
-  EEPROM.update(96, 128);
-  EEPROM.update(102, 0);
-  EEPROM.update(128, 255);
   
   // Display startup screen
   drawBoxedString(80, 10, "HealingHand", LIGHTBLUE, WHITE);
@@ -242,8 +207,7 @@ void loop() {
         break;
           
         case 2: { // Play Breakout
-          switchToGame(userLvl);
-          Serial.println(HHState);    
+          switchToGame(userLvl);   
         }
         break;
           
@@ -347,15 +311,15 @@ void initLCD() {
   LCD_Init();
 
   LCD_SetBacklight(100);
-  Paint_SetRotate(ROTATE_90);
-  Paint_NewImage(170, 320, 90, BLACK);
+  Paint_SetRotate(ROTATE_270);
+  Paint_NewImage(170, 320, 270, BLACK);
   Paint_Clear(BLACK);
 }
 
 void clearDialog() {
   LCD_SetBacklight(100);
-  Paint_SetRotate(ROTATE_90);
-  Paint_NewImage(170, 320, 90, BLACK);
+  Paint_SetRotate(ROTATE_270);
+  Paint_NewImage(170, 320, 270, BLACK);
   Paint_Clear(BLACK);
 }
 
@@ -375,7 +339,6 @@ void updateSensorValues() {
   flex4 = flexSensor.getPinky();
   flexAvg = flexSensor.getAverage();
   flexSensor.updateMaxValues();
-  
   // Update user stats from max values
   userFlex1 = flexSensor.getMaxIndex();
   userFlex2 = flexSensor.getMaxMiddle();
@@ -386,15 +349,12 @@ void updateSensorValues() {
   // Read force sensors
   force1 = fsrSensor.getThumb();
   force2 = fsrSensor.getIndex();
-  force3 = fsrSensor.getMiddle();
-  force4 = fsrSensor.getRing();
   forceAvg = fsrSensor.getAverage();
   fsrSensor.updateMaxValues();
   
   // Read SingleTact sensors
   force5 = singleTact.readSensorNewtons(SENSOR1_ADDRESS);
   force6 = singleTact.readSensorNewtons(SENSOR2_ADDRESS);
-  
   // Update max force value
   userForceAvg = fsrSensor.getMaxValue();
 }
@@ -424,26 +384,27 @@ void displayUsers() {
 }
 
 int getSelection() {
-  if (fsrSensor.isThumbPressed()) {
+  updateSensorValues();
+  if (fsrSensor.isThumbPressed(500)) {
     return 0;
   }
-  if (flex1 < 500) {
+  if (flex1 > 200) {
     return 1;
   }
-  if (flex2 < 500) {
+  if (flex2 > 215) {
     return 2;
   }
-  if (flex3 < 500) {
+  if (flex3 > 200) {
     return 3;
   }
-  if (flex4 < 500) {
+  if (flex4 > 215) {
     return 4;
   }
   return -1;
 }
 
 int waitForThumbPress() {
-  if (fsrSensor.isThumbPressed()) {
+  if (fsrSensor.isThumbPressed(500)) {
     return 1;
   }
   return -1;
