@@ -7,7 +7,7 @@
 
 // Constants
 #define REHAB_TIMEOUT 10000  // Timeout for each exercise in milliseconds
-#define COMPLETE_THRESHOLD 800  // Threshold to consider exercise complete
+#define COMPLETE_THRESHOLD 500  // Threshold to consider exercise complete
 
 // Color definitions - include new colors
 #define LIGHTBLUE 0x039F
