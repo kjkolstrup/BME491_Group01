@@ -6,7 +6,7 @@
 
 // Constants for pressure sensors
 #define SENSOR1_ADDRESS 0x06
-#define SENSOR2_ADDRESS 0x08
+#define SENSOR2_ADDRESS 0x0C
 #define FORCE_SCALE 0.01
 
 class SingleTact {
