@@ -4,14 +4,14 @@
 #include <Arduino.h>
 
 // Pin definitions for flex sensors
-#define FLEX1A A0
-#define FLEX1B A1
-#define FLEX2A A2
-#define FLEX2B A3
-#define FLEX3A A4
-#define FLEX3B A5
-#define FLEX4A A6
-#define FLEX4B A7
+#define FLEX1A A1
+#define FLEX1B A0
+#define FLEX2A A7
+#define FLEX2B A6
+#define FLEX3A A5
+#define FLEX3B A4
+#define FLEX4A A3
+#define FLEX4B A2
 
 class FlexSensor {
   public:
