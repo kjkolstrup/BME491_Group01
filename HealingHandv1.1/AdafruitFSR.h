@@ -5,9 +5,9 @@
 
 // Pin definitions for FSR sensors
 #define FORCE1 A8
-#define FORCE2 A9
-#define FORCE3 A10
-#define FORCE4 A11
+#define FORCE2 A11
+#define FORCE3 A9
+#define FORCE4 A10
 
 class AdafruitFSR {
   public:
