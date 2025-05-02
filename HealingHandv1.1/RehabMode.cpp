@@ -58,7 +58,7 @@ void RehabMode::update(int flex1, int flex2, int flex3, int flex4, int thumbForc
                   1);
       
       // Check if exercise is completed
-      if (thumbForce > COMPLETE_THRESHOLD && flex1 < 400 && !exerciseComplete && exerciseTracker > 3) {
+      if (thumbForce < COMPLETE_THRESHOLD && flex1 > 200 && !exerciseComplete && exerciseTracker > 1) {
         // Exercise completed
         exerciseComplete = true;
         successCount++;
@@ -80,7 +80,7 @@ void RehabMode::update(int flex1, int flex2, int flex3, int flex4, int thumbForc
                   2);
       
       // Check if exercise is completed
-      if (thumbForce > COMPLETE_THRESHOLD && flex2 < 400 && !exerciseComplete && exerciseTracker > 3) {
+      if (thumbForce < COMPLETE_THRESHOLD && flex2 > 200 && !exerciseComplete && exerciseTracker > 1) {
         // Exercise completed
         exerciseComplete = true;
         successCount++;
@@ -102,7 +102,7 @@ void RehabMode::update(int flex1, int flex2, int flex3, int flex4, int thumbForc
                   3);
       
       // Check if exercise is completed
-      if (thumbForce > COMPLETE_THRESHOLD && flex3 < 400 && !exerciseComplete && exerciseTracker > 3) {
+      if (thumbForce < COMPLETE_THRESHOLD && flex3 > 200 && !exerciseComplete && exerciseTracker > 1) {
         // Exercise completed
         exerciseComplete = true;
         successCount++;
@@ -124,7 +124,7 @@ void RehabMode::update(int flex1, int flex2, int flex3, int flex4, int thumbForc
                   4);
       
       // Check if exercise is completed
-      if (thumbForce > COMPLETE_THRESHOLD && flex4 < 400 && !exerciseComplete && exerciseTracker > 3) {
+      if (thumbForce < COMPLETE_THRESHOLD && flex4 > 200 && !exerciseComplete && exerciseTracker > 1) {
         // Exercise completed
         exerciseComplete = true;
         successCount++;
